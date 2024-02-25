@@ -4,10 +4,13 @@ using UnityEngine;
 
 public class User : NetworkBehaviour
 {
-    public static event Action<NetworkBehaviour> Connected;
+    public static event Action<User> Spawned;
+    public static event Action<User> Connected;
 
     public override void OnNetworkSpawn()
     {
+        if (IsOwner)
+            Spawned?.Invoke(this);
         NetworkManager.Singleton.OnClientConnectedCallback += TryConnect;
     }
 
@@ -19,9 +22,6 @@ public class User : NetworkBehaviour
     private void TryConnect(ulong id)
     {
         if (IsOwner && id == OwnerClientId)
-        {
-
             Connected?.Invoke(this);
-        }
     }
 }

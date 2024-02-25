@@ -1,32 +1,31 @@
+using System;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class Player : NetworkBehaviour
 {
-    [SerializeField] private Rigidbody _rigidbody;
-    [SerializeField] private float _speed;
+    public event Action<string> Initialized;
+    public event Action<int> MoneyChanged;
 
-    private int count;
+    public bool Moving => _moving.Value;
 
-    public override void OnNetworkSpawn()
+    [SerializeField] private NetworkObject _networkObject;
+    [SerializeField] private int _startMoneyCount;
+
+    private NetworkVariable<bool> _moving = new NetworkVariable<bool>();
+    private int _currentMoney;
+
+    public void Initialize(string name, ulong id)
     {
-        Debug.Log("Spawn");
-        TestServerRpc();
+        _currentMoney = _startMoneyCount;
+        _networkObject.SpawnAsPlayerObject(id);
+        Initialized?.Invoke(name);
+        MoneyChanged?.Invoke(_currentMoney);
     }
 
-    private void Update()
+    public void SetTurn(bool value)
     {
         if(IsOwner)
-        {
-            _rigidbody.velocity = new Vector3(Input.GetAxis("Horizontal") * _speed, 0, Input.GetAxis("Vertical") * _speed);
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void TestServerRpc()
-    {
-        Debug.Log("Rpc " + count);
-        count++;
+            _moving.Value = value;
     }
 }

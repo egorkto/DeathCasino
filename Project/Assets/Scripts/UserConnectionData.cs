@@ -2,13 +2,12 @@ using System;
 using Unity.Collections;
 using Unity.Netcode;
 
-public struct UserLobbyData : INetworkSerializable, IEquatable<UserLobbyData>
+public struct UserConnectionData : INetworkSerializable, IEquatable<UserConnectionData>
 {
     public ulong Id;
     public FixedString128Bytes Name;
-    public bool Ready;
 
-    public bool Equals(UserLobbyData other)
+    public bool Equals(UserConnectionData other)
     {
         return Id == other.Id;
     }
@@ -17,6 +16,5 @@ public struct UserLobbyData : INetworkSerializable, IEquatable<UserLobbyData>
     {
         serializer.SerializeValue(ref Id);
         serializer.SerializeValue(ref Name);
-        serializer.SerializeValue(ref Ready);
     }
 }
