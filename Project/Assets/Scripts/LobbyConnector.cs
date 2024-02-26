@@ -1,4 +1,3 @@
-using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -17,16 +16,15 @@ public class LobbyConnector : NetworkBehaviour
         User.Connected -= ConnectUser;
     }
 
-    private void ConnectUser(NetworkBehaviour networkObject)
+    private void ConnectUser(User user)
     {
         var userData = _dataLoader.GetData();
-        var userLobbyData = new UserLobbyData()
+        var userLobbyData = new UserConnectionData()
         {
-            Id = networkObject.OwnerClientId,
+            Id = user.OwnerClientId,
             Name = userData.Name,
-            Ready = networkObject.IsServer
         };
         if (!_lobby.TryConnectUser(userLobbyData))
-            NetworkManager.Singleton.DisconnectClient(networkObject.OwnerClientId);
+            NetworkManager.Singleton.DisconnectClient(user.OwnerClientId);
     }
 }
