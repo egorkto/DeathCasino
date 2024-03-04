@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class CameraMover : MonoBehaviour
@@ -11,22 +12,36 @@ public class CameraMover : MonoBehaviour
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        LockCursor();
     }
 
     private void OnDestroy()
     {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        UnlockCursor();
     }
 
     private void Update()
     {
+        if(Input.GetKeyDown(KeyCode.Escape))
+            UnlockCursor();
+        if (Input.GetMouseButtonDown(0))
+            LockCursor();
         _xRotation += Input.GetAxis("Mouse Y") * _sensitivity;
         _yRotation += Input.GetAxis("Mouse X") * _sensitivity;
         _xRotation = Mathf.Clamp(_xRotation, _xRotationRange.x, _xRotationRange.y);
         _yRotation = Mathf.Clamp(_yRotation, _yRotationRange.x, _yRotationRange.y);
         _camera.transform.localRotation = Quaternion.Euler(-_xRotation, _yRotation, 0);
+    }
+
+    private void LockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }
