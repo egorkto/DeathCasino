@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class TurnPresenter : NetworkBehaviour
 {
+    [SerializeField] private Animator _animator;
+
     public void PresentTurn(ulong id)
     {
         PresentTurnClientRpc(id);
@@ -12,6 +14,6 @@ public class TurnPresenter : NetworkBehaviour
     private void PresentTurnClientRpc(ulong id)
     {
         if (NetworkManager.Singleton.LocalClientId == id)
-            Debug.Log("present turn");
+            _animator.SetTrigger("AppearPanel");
     }
 }

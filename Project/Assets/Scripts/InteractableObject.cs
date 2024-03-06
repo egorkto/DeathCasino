@@ -10,7 +10,7 @@ public abstract class InteractableObject : NetworkBehaviour
 
     private bool _canTurn = true;
 
-    private void OnMouseEnter()
+    private void OnMouseOver()
     {
         if(NetworkManager.Singleton.LocalClientId == _orderer.TurningId && _canTurn)
             _outline.OutlineWidth = _lineWidth;
@@ -33,7 +33,7 @@ public abstract class InteractableObject : NetworkBehaviour
         _canTurn = false;
         _outline.OutlineWidth = 0;
         yield return Apply();
-        _orderer.EndTurn();
+        _orderer.TryEndTurnServerRpc();
         _canTurn = true;
     }
 

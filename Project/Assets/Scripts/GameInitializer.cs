@@ -6,17 +6,22 @@ public class GameInitializer : NetworkBehaviour
     [SerializeField] private PlayersSpawner _spawner;
     [SerializeField] private TurnsOrderer _orderer;
 
-    public override void OnNetworkSpawn()
+    private void OnEnable()
+    {
+        GameStarter.GameStarted += TryInitializeGame;
+    }
+
+    private void OnDisable()
+    {
+        GameStarter.GameStarted -= TryInitializeGame;
+    }
+
+    private void TryInitializeGame()
     {
         if (IsServer)
         {
-            var players = _spawner.SpawnPlayers(UsersHolder.GetUsers());
-            _orderer.SetPlayers(players);
+            _spawner.SpawnPlayers(UsersHolder.GetUsers());
+            _orderer.InitialiizeQueue(UsersHolder.GetUsers());
         }
-    }
-
-    private void Start()
-    {
-
     }
 }
