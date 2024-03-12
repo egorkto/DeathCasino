@@ -1,61 +1,47 @@
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class Lobby : NetworkBehaviour
 {
+    [SerializeField] private GameStarter _gameStarter;
     [SerializeField] private LobbyPresenter _presenter;
     [SerializeField] private UnityTransport _transport;
     [SerializeField] private byte _maxUsers;
     [SerializeField] private byte _startGameUsersLimit;
 
-    private List<UserLobbyData> _users = new List<UserLobbyData>();
+    private Dictionary<UserConnectionData, bool> _users = new Dictionary<UserConnectionData, bool>();
 
-    public bool TryConnectUser(UserLobbyData data)
+    public bool TryConnectUser(UserConnectionData data)
     {
         if(_users.Count <= _maxUsers)
         {
-            _presenter.InitializeLobbyWindow(_transport.ConnectionData.Address, _maxUsers, IsServer);
-            AddUserServerRpc(data);
+            _presenter.InitializeLobbyWindow(_transport.ConnectionData.Address, _maxUsers, IsHost);
+            AddUserServerRpc(data, IsHost);
             return true;
         }
         return false;
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void AddUserServerRpc(UserLobbyData data)
+    private void AddUserServerRpc(UserConnectionData data, bool isHost)
     {
-        _users.Add(data);
-        if (_users.Count >= _startGameUsersLimit && AllUsersReady(_users))
-            _presenter.PresentCanStartGame(true);
-        else
-            _presenter.PresentCanStartGame(false);
+        _users[data] = isHost;
+        TrySetCanStartGame();
         _presenter.PresentUsers(_users);
     }
 
-    [ServerRpc]
-    private void TrySetCanStartGameServerRpc()
+    private void TrySetCanStartGame()
     {
-        if (_users.Count >= _startGameUsersLimit && AllUsersReady(_users))
-            _presenter.PresentCanStartGame(true);
-        else
-            _presenter.PresentCanStartGame(false);
+        _presenter.PresentCanStartGame(_users.Count >= _startGameUsersLimit && !_users.ContainsValue(false));
     }
 
-    private bool AllUsersReady(List<UserLobbyData> users)
-    {
-        foreach (var user in users)
-            if (!user.Ready)
-                return false;
-        return true;
-    }
-
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     public void StartGameServerRpc()
     {
-        Debug.Log("Game Started");
-        _presenter.CloseLobbyClientRpc();
+        _gameStarter.StartGame(_users.Keys.ToList());
     }
 
     public void TryDisconnectUser(ulong id)
@@ -70,10 +56,10 @@ public class Lobby : NetworkBehaviour
     {
         foreach(var user in _users)
         {
-            if(user.Id == id)
+            if(user.Key.Id == id)
             {
-                _users.Remove(user);
-                TrySetCanStartGameServerRpc();
+                _users.Remove(user.Key);
+                TrySetCanStartGame();
                 _presenter.PresentUsers(_users);
                 return;
             }
@@ -90,23 +76,18 @@ public class Lobby : NetworkBehaviour
     [ServerRpc]
     private void ClearUsersServerRpc()
     {
-        _users = new List<UserLobbyData>();
+        _users = new Dictionary<UserConnectionData, bool>();
     }
 
     [ServerRpc(RequireOwnership = false)]
     public void TrySetReadinessServerRpc(bool value, ulong id)
     {
-        for(var i = 0; i < _users.Count; i++)
+        foreach (var user in _users)
         {
-            if(_users[i].Id == id)
+            if (user.Key.Id == id)
             {
-                _users[i] = new UserLobbyData()
-                {
-                    Id = _users[i].Id,
-                    Name = _users[i].Name,
-                    Ready = value
-                };
-                TrySetCanStartGameServerRpc();
+                _users[user.Key] = value;
+                TrySetCanStartGame();
                 _presenter.PresentUsers(_users);
                 return;
             }

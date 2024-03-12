@@ -20,14 +20,14 @@ public class LobbyPresenter : NetworkBehaviour
 
     private byte _maxUsers;
 
-    public void InitializeLobbyWindow(string ip, byte maxUsers, bool isServer)
+    public void InitializeLobbyWindow(string ip, byte maxUsers, bool isHost)
     {
         _lobbyWindow.SetActive(true);
         _ipText.text = ip;
         _maxUsers = maxUsers;
         _usersCountText.text = _users.Count + "/" + _maxUsers;
-        _hostButtons.SetActive(isServer);
-        _clientButtons.SetActive(!isServer);
+        _hostButtons.SetActive(isHost);
+        _clientButtons.SetActive(!isHost);
     }
 
     public void PresentCanStartGame(bool state)
@@ -35,19 +35,21 @@ public class LobbyPresenter : NetworkBehaviour
         _startGameButton.gameObject.SetActive(state);
     }
 
-    public void PresentUsers(List<UserLobbyData> users)
+    public void PresentUsers(Dictionary<UserConnectionData, bool> users)
     {
         ClearUsersClientRpc();
-        foreach (var user in users)
-            PresentUserClientRpc(user);
+        foreach(var user in users)
+        {
+            PresentUserClientRpc(user.Key, user.Value);
+        }
     }
 
     [ClientRpc]
-    private void PresentUserClientRpc(UserLobbyData data)
+    private void PresentUserClientRpc(UserConnectionData data, bool ready)
     {
         var present = Instantiate(_userLobbyPresent, _usersParent.transform).GetComponent<UserLobbyPresent>();
         present.SetName(data.Name);
-        present.SetReady(data.Ready);
+        present.SetReady(ready);
         _users.Add(present);
         _usersCountText.text = _users.Count + "/" + _maxUsers;
     }

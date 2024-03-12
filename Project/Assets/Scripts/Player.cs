@@ -1,32 +1,58 @@
+using System;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class Player : NetworkBehaviour
 {
-    [SerializeField] private Rigidbody _rigidbody;
-    [SerializeField] private float _speed;
+    public static event Action<ulong> Losed;
+    public static event Action<Player> Spawned;
 
-    private int count;
+    public event Action<PlayerCanvas, string> Initialized;
+    public event Action<int> MoneyChanged;
+
+    [SerializeField] private int _startMoneyCount;
+    [SerializeField] private Transform _cameraPoint;
+
+    private int _currentMoney;
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log("Spawn");
-        TestServerRpc();
+        if (IsOwner)
+            Spawned?.Invoke(this);
     }
 
-    private void Update()
+    public void Initialize(UserConnectionData user, PlayerCanvas canvas)
     {
-        if(IsOwner)
+        _currentMoney = _startMoneyCount;
+        Initialized?.Invoke(canvas, user.Name.ToString());
+        MoneyChanged?.Invoke(_currentMoney);
+        Camera.main.transform.SetParent(_cameraPoint);
+        Camera.main.transform.position = _cameraPoint.position;
+    }
+    
+    public void IncreaseMoney(int value)
+    {
+        _currentMoney += value;
+        MoneyChanged?.Invoke(_currentMoney);
+    }
+
+    public void TryDecreaseMoney(int value)
+    {
+        if (_currentMoney > value)
         {
-            _rigidbody.velocity = new Vector3(Input.GetAxis("Horizontal") * _speed, 0, Input.GetAxis("Vertical") * _speed);
+            _currentMoney -= value;
         }
+        else
+        {
+            _currentMoney = 0;
+            Losed?.Invoke(OwnerClientId);
+        }
+        MoneyChanged?.Invoke(_currentMoney);
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void TestServerRpc()
+    public void MultiplyMoney(float value)
     {
-        Debug.Log("Rpc " + count);
-        count++;
+        _currentMoney = (int)(_currentMoney * value);
+        MoneyChanged?.Invoke(_currentMoney);
     }
 }
